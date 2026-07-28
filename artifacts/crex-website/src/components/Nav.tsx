@@ -16,6 +16,7 @@ export function Nav() {
     { name: "Home", href: "#home" },
     { name: "About", href: "#about" },
     { name: "Services", href: "#services" },
+    { name: "Work", href: "#portfolio" },
     { name: "Why Us", href: "#why-us" },
     { name: "Contact", href: "#contact" },
   ];
@@ -44,7 +45,7 @@ export function Nav() {
           <img
             src={crexLogo}
             alt="Crex Website Development"
-            className="h-10 w-auto object-contain"
+            className="h-16 w-auto object-contain"
           />
         </a>
 

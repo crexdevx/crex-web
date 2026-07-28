@@ -1,256 +1,389 @@
+import React, { useState, useRef, useEffect, useMemo, Component } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { motion } from "framer-motion";
+import * as THREE from "three";
 
-function SilverHead() {
-  const rings = [
-    { w: 320, h: 110, opacity: 0.55, dur: 3.0, delay: 0.0, offsetY: -10 },
-    { w: 390, h: 135, opacity: 0.44, dur: 3.4, delay: 0.3, offsetY:  -4 },
-    { w: 460, h: 158, opacity: 0.34, dur: 3.8, delay: 0.6, offsetY:   4 },
-    { w: 530, h: 182, opacity: 0.24, dur: 4.3, delay: 0.9, offsetY:  10 },
-    { w: 600, h: 206, opacity: 0.15, dur: 4.8, delay: 1.2, offsetY:  16 },
-  ];
+/** Returns true only when the browser has a working WebGL context. */
+function supportsWebGL(): boolean {
+  try {
+    const canvas = document.createElement("canvas");
+    return Boolean(
+      window.WebGLRenderingContext &&
+        (canvas.getContext("webgl") || canvas.getContext("experimental-webgl"))
+    );
+  } catch {
+    return false;
+  }
+}
 
+// ── Error boundary so a WebGL failure doesn't crash the page ─────────────────
+class WebGLErrorBoundary extends Component<
+  { fallback: React.ReactNode; children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { fallback: React.ReactNode; children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) return this.props.fallback;
+    return this.props.children;
+  }
+}
+
+// ── CSS fallback head (when WebGL is unavailable) ─────────────────────────────
+function FallbackHead() {
   return (
-    <div className="absolute inset-0 z-0 flex items-center justify-center overflow-hidden select-none pointer-events-none">
-      {/* Subtle radial glow behind the head */}
-      <div
-        className="absolute rounded-full"
-        style={{
-          width: 480,
-          height: 480,
-          background: "radial-gradient(circle, rgba(180,190,210,0.08) 0%, transparent 70%)",
-          top: "50%",
-          left: "50%",
-          transform: "translate(-50%, -58%)",
-        }}
-      />
-
-      {/* 3D perspective container */}
-      <div style={{ perspective: "700px", perspectiveOrigin: "50% 42%" }}>
-        <motion.div
-          animate={{ rotateY: [-30, 30, -30] }}
-          transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+    <div className="w-full h-full flex items-center justify-center">
+      <motion.div
+        animate={{ rotateY: [-28, 28, -28] }}
+        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        style={{ transformStyle: "preserve-3d", width: 200, height: 300 }}
+      >
+        <div
           style={{
-            transformStyle: "preserve-3d",
-            position: "relative",
-            width: 260,
-            height: 420,
+            position: "absolute",
+            left: "50%",
+            top: "8%",
+            width: 160,
+            height: 180,
+            marginLeft: -80,
+            background:
+              "linear-gradient(145deg,#ebebf0 0%,#c2c8d4 18%,#e4e6ec 34%,#9ea6b4 50%,#cdd0d8 64%,#8b9099 78%,#b8bcc8 100%)",
+            borderRadius: "48% 48% 43% 43%/54% 54% 46% 46%",
+            boxShadow: "6px 10px 38px rgba(0,0,0,0.75)",
           }}
-        >
-          {/* ── Wave rings (horizontal halos around the head) ── */}
-          {rings.map((ring, i) => (
-            <motion.div
-              key={i}
-              animate={{ y: [ring.offsetY, -ring.offsetY, ring.offsetY] }}
-              transition={{ duration: ring.dur, repeat: Infinity, ease: "easeInOut", delay: ring.delay }}
-              style={{
-                position: "absolute",
-                left: "50%",
-                top: "46%",
-                width: ring.w,
-                height: ring.h,
-                marginLeft: -(ring.w / 2),
-                marginTop: -(ring.h / 2),
-                border: `1px solid rgba(192, 198, 220, ${ring.opacity})`,
-                borderRadius: "50%",
-                boxShadow: `0 0 ${6 - i}px rgba(210,215,235,${ring.opacity * 0.6})`,
-              }}
-            />
-          ))}
-
-          {/* ── Cranium ── */}
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "4%",
-              width: 190,
-              height: 215,
-              marginLeft: -95,
-              background: `
-                radial-gradient(ellipse at 32% 28%, rgba(255,255,255,0.55) 0%, transparent 45%),
-                linear-gradient(145deg,
-                  #ebebf0 0%,
-                  #c2c8d4 18%,
-                  #e4e6ec 34%,
-                  #9ea6b4 50%,
-                  #cdd0d8 64%,
-                  #8b9099 78%,
-                  #b8bcc8 100%
-                )
-              `,
-              borderRadius: "48% 48% 43% 43% / 54% 54% 46% 46%",
-              boxShadow: "6px 10px 38px rgba(0,0,0,0.75), inset 2px 2px 6px rgba(255,255,255,0.25), inset -2px -3px 8px rgba(0,0,0,0.3)",
-            }}
-          />
-
-          {/* ── Ear (left side visible on rotation) ── */}
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "28%",
-              width: 24,
-              height: 36,
-              marginLeft: -107,
-              background: "linear-gradient(90deg, #8b9099 0%, #c2c8d4 60%, #9ea6b4 100%)",
-              borderRadius: "50% 30% 35% 50% / 50% 50% 50% 50%",
-              boxShadow: "2px 2px 6px rgba(0,0,0,0.5)",
-            }}
-          />
-          {/* Ear right */}
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "28%",
-              width: 24,
-              height: 36,
-              marginLeft: 83,
-              background: "linear-gradient(270deg, #8b9099 0%, #c2c8d4 60%, #9ea6b4 100%)",
-              borderRadius: "30% 50% 50% 35% / 50% 50% 50% 50%",
-              boxShadow: "-2px 2px 6px rgba(0,0,0,0.5)",
-            }}
-          />
-
-          {/* ── Jaw / lower face taper ── */}
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "44%",
-              width: 148,
-              height: 120,
-              marginLeft: -74,
-              background: `
-                linear-gradient(160deg,
-                  #d0d4dc 0%,
-                  #9ea6b4 30%,
-                  #c8ccd4 55%,
-                  #8b9099 75%,
-                  #b0b4bc 100%
-                )
-              `,
-              borderRadius: "45% 45% 50% 50% / 30% 30% 55% 55%",
-              boxShadow: "0 8px 20px rgba(0,0,0,0.6)",
-            }}
-          />
-
-          {/* ── Neck ── */}
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "72%",
-              width: 62,
-              height: 72,
-              marginLeft: -31,
-              background: "linear-gradient(180deg, #b0b4bc 0%, #8b9099 50%, #9ea6b4 100%)",
-              borderRadius: "6px 6px 10px 10px",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.55)",
-            }}
-          />
-
-          {/* ── Shoulders ── */}
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "86%",
-              width: 240,
-              height: 54,
-              marginLeft: -120,
-              background: "linear-gradient(180deg, #9ea6b4 0%, #7a8090 60%, #868c98 100%)",
-              borderRadius: "55% 55% 0 0 / 85% 85% 0 0",
-              boxShadow: "0 6px 18px rgba(0,0,0,0.6)",
-            }}
-          />
-
-          {/* ── Specular highlight (glossy white sheen across cranium) ── */}
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "5%",
-              width: 90,
-              height: 80,
-              marginLeft: -65,
-              background: "radial-gradient(ellipse at 40% 30%, rgba(255,255,255,0.38) 0%, transparent 70%)",
-              borderRadius: "50%",
-              pointerEvents: "none",
-            }}
-          />
-        </motion.div>
-      </div>
+        />
+      </motion.div>
     </div>
   );
 }
 
-export function Hero() {
-  const handleScroll = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    const element = document.querySelector("#contact");
-    if (element) {
-      element.scrollIntoView({ behavior: "smooth" });
+// ── 3D Character (adapted from uploaded file) ─────────────────────────────────
+function Character3D({ mousePosition }: { mousePosition: { x: number; y: number } }) {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame(() => {
+    if (groupRef.current) {
+      groupRef.current.rotation.y +=
+        (mousePosition.x * 0.5 - groupRef.current.rotation.y) * 0.08;
+      groupRef.current.rotation.x +=
+        (mousePosition.y * 0.3 - groupRef.current.rotation.x) * 0.08;
     }
+  });
+
+  return (
+    <group ref={groupRef} position={[0, -0.3, 0]}>
+      {/* Body */}
+      <mesh position={[0, -0.5, 0]}>
+        <capsuleGeometry args={[0.6, 2, 4, 16]} />
+        <meshStandardMaterial color="#111111" metalness={0.15} roughness={0.75} />
+      </mesh>
+
+      {/* Neck */}
+      <mesh position={[0, 0.5, 0]}>
+        <cylinderGeometry args={[0.3, 0.35, 0.3, 32]} />
+        <meshStandardMaterial color="#d4a574" />
+      </mesh>
+
+      {/* Head */}
+      <mesh position={[0, 1.2, 0]}>
+        <sphereGeometry args={[0.5, 64, 64]} />
+        <meshStandardMaterial color="#d4a574" metalness={0.0} roughness={0.9} />
+      </mesh>
+
+      {/* Hair – top */}
+      <mesh position={[0, 1.65, 0]}>
+        <sphereGeometry args={[0.52, 64, 64]} />
+        <meshStandardMaterial color="#1a1a1a" />
+      </mesh>
+
+      {/* Hair – sides */}
+      <mesh position={[-0.35, 1.4, -0.1]}>
+        <sphereGeometry args={[0.35, 32, 32]} />
+        <meshStandardMaterial color="#1a1a1a" />
+      </mesh>
+      <mesh position={[0.35, 1.4, -0.1]}>
+        <sphereGeometry args={[0.35, 32, 32]} />
+        <meshStandardMaterial color="#1a1a1a" />
+      </mesh>
+
+      {/* Beard */}
+      <mesh position={[0, 0.8, 0.4]}>
+        <sphereGeometry args={[0.28, 32, 32]} />
+        <meshStandardMaterial color="#2d2d2d" />
+      </mesh>
+
+      {/* Left eye */}
+      <mesh position={[-0.15, 1.35, 0.48]}>
+        <sphereGeometry args={[0.1, 32, 32]} />
+        <meshStandardMaterial color="#1a1a1a" />
+      </mesh>
+      <mesh position={[-0.15, 1.35, 0.52]}>
+        <sphereGeometry args={[0.08, 16, 16]} />
+        <meshStandardMaterial color="#ffffff" />
+      </mesh>
+      <mesh position={[-0.15, 1.35, 0.545]}>
+        <sphereGeometry args={[0.05, 16, 16]} />
+        <meshStandardMaterial color="#1a1a1a" />
+      </mesh>
+
+      {/* Right eye */}
+      <mesh position={[0.15, 1.35, 0.48]}>
+        <sphereGeometry args={[0.1, 32, 32]} />
+        <meshStandardMaterial color="#1a1a1a" />
+      </mesh>
+      <mesh position={[0.15, 1.35, 0.52]}>
+        <sphereGeometry args={[0.08, 16, 16]} />
+        <meshStandardMaterial color="#ffffff" />
+      </mesh>
+      <mesh position={[0.15, 1.35, 0.545]}>
+        <sphereGeometry args={[0.05, 16, 16]} />
+        <meshStandardMaterial color="#1a1a1a" />
+      </mesh>
+
+      {/* Eyebrows */}
+      <mesh position={[-0.15, 1.5, 0.48]}>
+        <boxGeometry args={[0.2, 0.05, 0.05]} />
+        <meshStandardMaterial color="#1a1a1a" />
+      </mesh>
+      <mesh position={[0.15, 1.5, 0.48]}>
+        <boxGeometry args={[0.2, 0.05, 0.05]} />
+        <meshStandardMaterial color="#1a1a1a" />
+      </mesh>
+
+      {/* Nose */}
+      <mesh position={[0, 1.2, 0.48]}>
+        <coneGeometry args={[0.08, 0.25, 16]} />
+        <meshStandardMaterial color="#c99563" />
+      </mesh>
+
+      {/* Shoulders */}
+      <mesh position={[-0.7, 0.3, 0]}>
+        <sphereGeometry args={[0.35, 32, 32]} />
+        <meshStandardMaterial color="#111111" />
+      </mesh>
+      <mesh position={[0.7, 0.3, 0]}>
+        <sphereGeometry args={[0.35, 32, 32]} />
+        <meshStandardMaterial color="#111111" />
+      </mesh>
+
+      {/* Arms */}
+      <mesh position={[-1.1, -0.2, 0]}>
+        <capsuleGeometry args={[0.2, 0.8, 4, 16]} />
+        <meshStandardMaterial color="#c99563" />
+      </mesh>
+      <mesh position={[1.1, -0.2, 0]}>
+        <capsuleGeometry args={[0.2, 0.8, 4, 16]} />
+        <meshStandardMaterial color="#c99563" />
+      </mesh>
+
+      {/* White/silver accent panels (replace yellow from original) */}
+      <mesh position={[0.8, 0.5, -1]}>
+        <boxGeometry args={[1.5, 2, 0.1]} />
+        <meshStandardMaterial
+          color="#e0e0e8"
+          emissive="#888899"
+          emissiveIntensity={0.15}
+          transparent
+          opacity={0.18}
+        />
+      </mesh>
+      <mesh position={[0.6, -0.5, -0.9]}>
+        <boxGeometry args={[1.2, 1.5, 0.1]} />
+        <meshStandardMaterial
+          color="#ccccdd"
+          emissive="#6666aa"
+          emissiveIntensity={0.1}
+          transparent
+          opacity={0.12}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+// ── Three.js Canvas wrapper ────────────────────────────────────────────────────
+function Hero3DCanvas({ mousePosition }: { mousePosition: { x: number; y: number } }) {
+  return (
+    <Canvas camera={{ position: [0, 0, 4], fov: 48 }} gl={{ alpha: true }}>
+      <ambientLight intensity={0.7} />
+      <directionalLight position={[5, 6, 5]} intensity={1.4} />
+      <directionalLight position={[-4, -3, 4]} intensity={0.5} color="#aabbff" />
+      <pointLight position={[0, 0, 3]} intensity={0.4} color="#ffffff" />
+      <Character3D mousePosition={mousePosition} />
+      <fog attach="fog" args={["#000000", 5, 14]} />
+    </Canvas>
+  );
+}
+
+// ── Main Hero Export ──────────────────────────────────────────────────────────
+export function Hero() {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hasWebGL = useMemo(() => supportsWebGL(), []);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+      const y = -((e.clientY - rect.top) / rect.height - 0.5) * 2;
+      setMousePosition({ x, y });
+    };
+    const handleMouseLeave = () => setMousePosition({ x: 0, y: 0 });
+
+    window.addEventListener("mousemove", handleMouseMove);
+    containerRef.current?.addEventListener("mouseleave", handleMouseLeave);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, []);
+
+  const scrollToContact = () => {
+    document.querySelector("#contact")?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
     <section
       id="home"
-      className="relative min-h-[100dvh] flex items-center justify-center overflow-hidden pt-20 bg-black"
+      ref={containerRef}
+      className="relative min-h-[100dvh] bg-black overflow-hidden pt-20"
     >
-      {/* 3D Silver Head */}
-      <SilverHead />
+      {/* Subtle radial gradient backdrop */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 80% at 72% 55%, rgba(255,255,255,0.04) 0%, transparent 70%)",
+        }}
+      />
 
-      {/* Bottom gradient so text reads clearly */}
-      <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-b from-black/20 via-transparent to-black/70" />
+      <div className="max-w-7xl mx-auto px-6 min-h-[calc(100dvh-80px)] grid grid-cols-1 lg:grid-cols-2 gap-6 items-center py-12">
+        {/* ── Left: Text ── */}
+        <div className="relative z-10 flex flex-col justify-center">
+          <motion.p
+            className="text-white/40 text-xs font-mono uppercase tracking-widest mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.1 }}
+          >
+            Professional Website Development
+          </motion.p>
 
-      {/* Hero Text */}
-      <div className="relative z-20 max-w-7xl mx-auto px-6 w-full flex flex-col items-center text-center">
-        <motion.h1
-          className="font-heading text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter text-white mb-6 leading-[1.1] max-w-5xl"
-          style={{ textShadow: "0 2px 24px rgba(0,0,0,0.8)" }}
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          <motion.h1
+            className="font-heading text-5xl md:text-6xl xl:text-7xl font-bold tracking-tighter text-white leading-[1.05] mb-6"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          >
+            Build Your Online
+            <br />
+            <span className="text-white/70">Presence</span> with
+            <br />
+            Crex
+          </motion.h1>
+
+          <motion.p
+            className="text-gray-400 text-lg leading-relaxed max-w-md mb-10"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.35 }}
+          >
+            We create modern websites that help businesses grow online — clean, fast, and built to impress.
+          </motion.p>
+
+          <motion.div
+            className="flex flex-wrap items-center gap-4"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+          >
+            <motion.button
+              onClick={scrollToContact}
+              className="bg-white text-black px-8 py-4 text-sm font-bold uppercase tracking-widest hover:bg-gray-100 transition-all duration-300"
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+            >
+              Get Started
+            </motion.button>
+            <a
+              href="#services"
+              onClick={(e) => {
+                e.preventDefault();
+                document.querySelector("#services")?.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="text-white/50 text-sm font-medium hover:text-white transition-colors tracking-wide"
+            >
+              View Services →
+            </a>
+          </motion.div>
+
+          {/* Stats row */}
+          <motion.div
+            className="flex gap-10 mt-14 pt-10 border-t border-white/10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.8, delay: 0.7 }}
+          >
+            {[
+              { label: "Websites Built", value: "10+" },
+              { label: "Happy Clients", value: "10+" },
+              { label: "Delivery", value: "1–2 wks" },
+            ].map((s) => (
+              <div key={s.label}>
+                <p className="font-heading text-2xl font-bold text-white tracking-tight">{s.value}</p>
+                <p className="text-white/35 text-xs font-mono uppercase tracking-widest mt-1">{s.label}</p>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* ── Right: 3D Character ── */}
+        <motion.div
+          className="relative h-[520px] lg:h-[640px] rounded-sm overflow-hidden"
+          initial={{ opacity: 0, x: 40 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 1, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
         >
-          Build Your Online Presence with Crex
-        </motion.h1>
+          {hasWebGL ? (
+            <WebGLErrorBoundary fallback={<FallbackHead />}>
+              <React.Suspense fallback={<FallbackHead />}>
+                <Hero3DCanvas mousePosition={mousePosition} />
+              </React.Suspense>
+            </WebGLErrorBoundary>
+          ) : (
+            <FallbackHead />
+          )}
 
-        <motion.p
-          className="text-lg md:text-2xl text-gray-300 mb-10 max-w-2xl font-light tracking-wide leading-relaxed"
-          style={{ textShadow: "0 1px 12px rgba(0,0,0,0.7)" }}
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-        >
-          We create modern websites that help businesses grow online.
-        </motion.p>
-
-        <motion.button
-          onClick={handleScroll}
-          className="bg-white text-black px-8 py-4 text-sm font-bold uppercase tracking-widest hover:bg-gray-200 transition-all duration-300"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          Get Started
-        </motion.button>
+          {/* "Move cursor" hint — only shown when 3D is active */}
+          {hasWebGL && (
+            <motion.div
+              className="absolute bottom-5 right-5 text-[10px] text-white/30 font-mono uppercase tracking-widest bg-white/5 border border-white/10 px-3 py-2 backdrop-blur-sm"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1.5 }}
+            >
+              Move cursor to rotate →
+            </motion.div>
+          )}
+        </motion.div>
       </div>
 
       {/* Scroll indicator */}
       <motion.div
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-white/50"
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-2 text-white/30"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.2, duration: 1 }}
+        transition={{ delay: 1.4 }}
       >
-        <span className="text-[10px] uppercase tracking-widest font-mono">Scroll</span>
+        <span className="text-[9px] uppercase tracking-widest font-mono">Scroll</span>
         <motion.div
-          className="w-[1px] h-12 bg-gradient-to-b from-white/50 to-transparent origin-top"
-          animate={{ scaleY: [0, 1, 0], translateY: [0, 10, 20] }}
+          className="w-[1px] h-10 bg-gradient-to-b from-white/30 to-transparent origin-top"
+          animate={{ scaleY: [0, 1, 0], translateY: [0, 8, 18] }}
           transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         />
       </motion.div>
