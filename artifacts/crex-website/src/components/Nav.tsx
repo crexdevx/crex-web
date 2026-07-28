@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { Menu, X } from "lucide-react";
+import crexLogo from "@assets/image_a0fd2086-41fc-4d0c-96ab-8d69d471f281_1785269001765.png";
 
 export function Nav() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -38,12 +39,13 @@ export function Nav() {
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
     >
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        {/* Logo Placeholder */}
-        <a href="#home" onClick={(e) => handleLinkClick(e, "#home")} className="group flex items-center gap-2">
-          <div className="font-heading font-bold text-2xl tracking-tighter uppercase relative">
-            CREX
-            <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-white transition-all group-hover:w-full"></span>
-          </div>
+        {/* Logo */}
+        <a href="#home" onClick={(e) => handleLinkClick(e, "#home")} className="flex items-center">
+          <img
+            src={crexLogo}
+            alt="Crex Website Development"
+            className="h-10 w-auto object-contain"
+          />
         </a>
 
         {/* Desktop Links */}
