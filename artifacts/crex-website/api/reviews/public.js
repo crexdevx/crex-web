@@ -1,18 +1,34 @@
-module.exports = function handler(req, res) {
+import { kv } from '@vercel/kv';
+import { randomUUID } from 'node:crypto';
+
+function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
 
+export default async function handler(req, res) {
+  cors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'POST') {
-    // Public review submissions require a writable database to persist.
-    // Connect a DB (e.g. Vercel KV, Postgres) and update this function
-    // to save incoming reviews. Until then, submissions return 501.
-    return res.status(501).json({
-      error: 'Review submissions require a database. Connect a DB and update this endpoint to save reviews.',
-    });
+    const { author, role, body, rating } = req.body ?? {};
+    if (!author?.trim() || !body?.trim())
+      return res.status(400).json({ error: 'Name and review are required.' });
+
+    const reviews = (await kv.get('reviews')) ?? [];
+    const review = {
+      id: randomUUID(),
+      author: author.trim(),
+      role: role?.trim() ?? '',
+      body: body.trim(),
+      rating: Number(rating) || 5,
+      createdAt: new Date().toISOString(),
+    };
+    reviews.push(review);
+    await kv.set('reviews', reviews);
+    return res.status(201).json({ ok: true });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
-};
+}

@@ -1,45 +1,70 @@
-const path = require('path');
-const fs = require('fs');
-const crypto = require('crypto');
+import { kv } from '@vercel/kv';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { randomUUID } from 'node:crypto';
 
-const dataFile = path.join(process.cwd(), 'data', 'portfolio.json');
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
-function readData() {
+function readSeedData() {
   try {
-    return JSON.parse(fs.readFileSync(dataFile, 'utf8'));
-  } catch {
-    return [];
+    return JSON.parse(readFileSync(join(__dirname, '../../data/portfolio.json'), 'utf8'));
+  } catch { return []; }
+}
+
+async function getPortfolio() {
+  let items = await kv.get('portfolio');
+  if (!items) {
+    items = readSeedData();
+    await kv.set('portfolio', items);
   }
+  return items;
 }
 
 function checkAdmin(req) {
   const pw = req.headers['x-admin-password'];
   const expected = process.env.ADMIN_PASSWORD;
-  if (!expected) return false;
-  return pw === expected;
+  return !!expected && pw === expected;
 }
 
-module.exports = function handler(req, res) {
+function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-password');
+}
 
+export default async function handler(req, res) {
+  cors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'GET') {
-    return res.status(200).json(readData());
+    return res.status(200).json(await getPortfolio());
   }
 
   if (req.method === 'POST') {
     if (!checkAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
+    const { title, client, description, tags, link, imageBase64, imageType } = req.body ?? {};
+    if (!title?.trim()) return res.status(400).json({ error: 'Title is required.' });
 
-    // Write operations require a writable database.
-    // On Vercel's read-only filesystem you must integrate a DB (e.g. Vercel KV,
-    // Postgres, MongoDB) and update this function to persist data there.
-    return res.status(501).json({
-      error: 'Write operations require a database. Set ADMIN_PASSWORD and connect a database to enable this endpoint.',
-    });
+    const imageUrl = imageBase64 && imageType
+      ? `data:${imageType};base64,${imageBase64}`
+      : null;
+
+    const items = await getPortfolio();
+    const item = {
+      id: randomUUID(),
+      title: title.trim(),
+      client: client?.trim() ?? '',
+      description: description?.trim() ?? '',
+      tags: Array.isArray(tags) ? tags : [],
+      link: link?.trim() ?? '',
+      imageUrl,
+      createdAt: new Date().toISOString(),
+    };
+    items.unshift(item);
+    await kv.set('portfolio', items);
+    return res.status(201).json(item);
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
-};
+}

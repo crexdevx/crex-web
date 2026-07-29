@@ -1,19 +1,29 @@
-module.exports = function handler(req, res) {
+import { kv } from '@vercel/kv';
+
+function checkAdmin(req) {
+  const pw = req.headers['x-admin-password'];
+  const expected = process.env.ADMIN_PASSWORD;
+  return !!expected && pw === expected;
+}
+
+function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-admin-password');
+}
 
+export default async function handler(req, res) {
+  cors(res);
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   if (req.method === 'DELETE') {
-    const pw = req.headers['x-admin-password'];
-    const expected = process.env.ADMIN_PASSWORD;
-    if (!expected || pw !== expected) return res.status(401).json({ error: 'Unauthorized' });
-
-    return res.status(501).json({
-      error: 'Write operations require a database. Connect a DB (e.g. Vercel KV) and update this function to persist data.',
-    });
+    if (!checkAdmin(req)) return res.status(401).json({ error: 'Unauthorized' });
+    const { id } = req.query;
+    const items = (await kv.get('portfolio')) ?? [];
+    const updated = items.filter((i) => i.id !== id);
+    await kv.set('portfolio', updated);
+    return res.status(200).json({ ok: true });
   }
 
   return res.status(405).json({ error: 'Method not allowed' });
-};
+}
