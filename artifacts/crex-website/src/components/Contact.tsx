@@ -14,25 +14,26 @@ export function Contact() {
           <h2 className="font-heading text-5xl md:text-7xl text-white font-bold tracking-tighter mb-8">
             Let's Build Something Great
           </h2>
-          
+
           <p className="text-xl md:text-2xl text-gray-400 font-light mb-16 max-w-2xl mx-auto leading-relaxed">
-            Ready to take your business online? Get in touch and we'll create a website that works as hard as you do.
+            Ready to take your business online? Get in touch and we'll create a
+            website that works as hard as you do.
           </p>
-          
+
           <div className="flex flex-col items-center gap-8">
-            <a 
-              href="mailto:bp9081012@gmail.com"
+            <a
+              href="mailto:crexdevweb@gmail.com"
               className="group flex items-center gap-4 bg-white text-black px-10 py-6 text-lg font-bold uppercase tracking-widest hover:bg-gray-200 transition-all duration-300"
             >
               Contact Crex
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </a>
-            
-            <a 
-              href="mailto:bp9081012@gmail.com" 
+
+            <a
+              href="mailto:crexdevweb@gmail.com"
               className="text-gray-500 hover:text-white transition-colors text-lg tracking-wide border-b border-transparent hover:border-white/30 pb-1"
             >
-              bp9081012@gmail.com
+              crexdevweb@gmail.com
             </a>
           </div>
         </motion.div>

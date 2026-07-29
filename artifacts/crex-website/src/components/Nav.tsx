@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { Menu, X } from "lucide-react";
-import crexLogo from "@assets/image_a0fd2086-41fc-4d0c-96ab-8d69d471f281_1785269001765.png";
 
 export function Nav() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -40,12 +39,13 @@ export function Nav() {
       transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
     >
       <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-        {/* Logo */}
+        {/* Logo — mix-blend-mode:screen melts the dark background into black */}
         <a href="#home" onClick={(e) => handleLinkClick(e, "#home")} className="flex items-center">
           <img
-            src={crexLogo}
+            src="/logo.png"
             alt="Crex Website Development"
-            className="h-16 w-auto object-contain"
+            className="h-14 w-auto object-contain"
+            style={{ mixBlendMode: "screen" }}
           />
         </a>
 

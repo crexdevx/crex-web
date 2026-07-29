@@ -1,8 +1,12 @@
 import express, { type Express } from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app: Express = express();
 
@@ -28,6 +32,10 @@ app.use(
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded portfolio images
+const uploadsDir = path.resolve(__dirname, "../../data/uploads");
+app.use("/api/uploads", express.static(uploadsDir));
 
 app.use("/api", router);
 
