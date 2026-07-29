@@ -1,0 +1,13 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    { "source": "/api/reviews/verify", "destination": "/api/reviews/verify" },
+    { "source": "/api/reviews/public", "destination": "/api/reviews/public" },
+    { "source": "/api/reviews/:id", "destination": "/api/reviews/[id]" },
+    { "source": "/api/reviews", "destination": "/api/reviews/index" },
+    { "source": "/api/portfolio/:id", "destination": "/api/portfolio/[id]" },
+    { "source": "/api/portfolio", "destination": "/api/portfolio/index" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}
