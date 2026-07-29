@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
  * 3. The placeholder box will disappear and your real video will play.
  * ─────────────────────────────────────────────────────────────────────────────
  */
-const VIDEO_SRC = ""; // ← paste your video path here e.g. "/hero-video.mp4"
+const VIDEO_SRC = "/hero-video.mp4";
 
 export function Hero() {
   const scrollToContact = () =>
