@@ -12,8 +12,28 @@ function isAdmin(req: { headers: Record<string, string | string[] | undefined> }
 
 // GET /api/reviews — public
 router.get("/reviews", (_req, res) => {
+  res.json(readReviews());
+});
+
+// POST /api/reviews/public — visitors submit their own review (no auth, goes live immediately)
+router.post("/reviews/public", (req, res) => {
+  const { author, role, body, rating } = req.body as Partial<Review>;
+  if (!author || !body) {
+    res.status(400).json({ error: "author and body are required" });
+    return;
+  }
+  const review: Review = {
+    id: randomUUID(),
+    author: String(author).trim(),
+    role: role ? String(role).trim() : "",
+    body: String(body).trim(),
+    rating: Math.min(5, Math.max(1, Number(rating) || 5)),
+    createdAt: new Date().toISOString(),
+  };
   const reviews = readReviews();
-  res.json(reviews);
+  reviews.push(review); // append (admin-added show first)
+  writeReviews(reviews);
+  res.status(201).json(review);
 });
 
 // POST /api/reviews/verify — check admin password (used by admin login screen)
