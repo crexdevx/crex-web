@@ -1,2 +1,8 @@
 User-agent: *
 Allow: /
+
+# Keep the admin panel private from search engines
+Disallow: /admin
+
+# Sitemap location
+Sitemap: https://www.crex.com/sitemap.xml

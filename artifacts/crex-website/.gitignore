@@ -25,5 +25,9 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
+# Replit-specific (not needed in the repo)
+.replit
+replit.nix
+
 # TypeScript
 *.tsbuildinfo

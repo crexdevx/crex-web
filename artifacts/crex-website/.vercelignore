@@ -1,0 +1,3 @@
+# Replit-specific config files — ignored by Vercel during deployment
+.replit
+replit.nix
