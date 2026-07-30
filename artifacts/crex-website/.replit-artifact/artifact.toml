@@ -11,10 +11,10 @@ paths = [ "/" ]
 localPort = 19986
 
 [services.development]
-run = "pnpm --filter ./artifacts/crex-website run dev"
+run = "pnpm --filter @workspace/crex-website run dev"
 
 [services.production]
-build = [ "pnpm", "--filter", "./artifacts/crex-website", "run", "build" ]
+build = [ "pnpm", "--filter", "@workspace/crex-website", "run", "build" ]
 serve = "static"
 publicDir = "artifacts/crex-website/dist"
 
